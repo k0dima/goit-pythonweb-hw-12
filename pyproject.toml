@@ -1,0 +1,32 @@
+[project]
+name = "goit-pythonweb-hw-08"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "k0dima",email = "214964089+k0dima@users.noreply.github.com"}
+]
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "fastapi (>=0.141.1,<0.142.0)",
+    "uvicorn (>=0.53.0,<0.54.0)",
+    "sqlalchemy (>=2.0.54,<3.0.0)",
+    "pydantic (>=2.13.5,<3.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "greenlet (>=3.5.6,<4.0.0)",
+    "alembic (>=1.20.0,<2.0.0)",
+    "passlib[bcrypt] (>=1.7.4,<2.0.0)",
+    "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "pydantic-settings (>=2.15.0,<3.0.0)",
+    "email-validator (>=2.3.0,<3.0.0)",
+    "libgravatar (>=1.0.4,<2.0.0)",
+    "fastapi-mail (>=1.6.8,<2.0.0)",
+    "cloudinary (>=1.46.2,<2.0.0)",
+    "slowapi (>=0.1.10,<0.2.0)",
+    "python-multipart (>=0.0.32,<0.0.33)",
+    "bcrypt (<5)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
