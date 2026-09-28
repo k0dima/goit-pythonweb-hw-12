@@ -36,7 +36,7 @@ class ContactRepository:
 
         stmt = (
             select(Contact)
-            .filter_by(user=user)
+            .filter_by(user_id=user.id)
             .where(*where)
             .offset(skip)
             .limit(limit)     
@@ -48,7 +48,7 @@ class ContactRepository:
     async def get_contact_by_id(self, contact_id: int, user: User) -> Contact | None:
         stmt = (
             select(Contact)
-            .filter_by(user=user)
+            .filter_by(user_id=user.id)
             .where(Contact.id == contact_id)
         )
 
@@ -57,7 +57,7 @@ class ContactRepository:
         return result.scalar_one_or_none()
 
     async def create_contact(self, body: CreateContact, user: User):
-        contact = Contact(**body.model_dump(), user=user)
+        contact = Contact(**body.model_dump(), user_id=user.id)
 
         self.db.add(contact)
         await self.db.commit()
@@ -104,7 +104,7 @@ class ContactRepository:
 
         stmt = (
             select(Contact)
-            .filter_by(user=user)
+            .filter_by(user_id=user.id)
             .where(or_(*conditions))
             .offset(skip)
             .limit(limit)

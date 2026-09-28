@@ -13,6 +13,14 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   app:
     build: .
     env_file:
@@ -22,8 +30,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      - redis
+      - postgres
     command: sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
 
 volumes:

@@ -1,9 +1,26 @@
 from src.api import contacts, users, auth
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import redis.asyncio as redis
 
 
-app = FastAPI()
+from src.conf.config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.redis = redis.from_url(
+        settings.REDIS_URL,
+        decode_responses=True,
+    )
+    try:
+        yield
+    finally:
+        await app.state.redis.aclose()
+
+
+app = FastAPI(lifespan=lifespan)
 origins = ["*"]
 app.add_middleware(
     CORSMiddleware,

@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 
+from redis.asyncio import Redis
+from src.services.redis_client import get_redis
+
 from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
@@ -10,6 +13,9 @@ from jose import JWTError, jwt
 from src.database.db import get_db
 from src.conf.config import settings
 from src.services.users import UserService
+from src.roles import UserRole
+from src.database.models import User as UserDB
+from src.schema import User as UserData
 
 
 class Hash:
@@ -40,7 +46,9 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = None):
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_db),
+        cache: Redis = Depends(get_redis),
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,11 +66,30 @@ async def get_current_user(
             raise credentials_exception
     except JWTError as e:
         raise credentials_exception
-    user_service = UserService(db)
-    user = await user_service.get_user_by_email(email)
 
-    if user is None:
+    key = f"user:email:{email}"
+    cached = await cache.get(key)
+
+    if cached is not None:
+        return UserData.model_validate_json(cached)
+
+    db_user = await UserService(db).get_user_by_email(email)
+    if db_user is None:
         raise credentials_exception
+
+    current_user = UserData.model_validate(db_user)
+    await cache.set(key, current_user.model_dump_json(), ex=600)
+    return current_user
+
+
+async def get_admin_user(
+        user: UserDB = Depends(get_current_user),
+) -> UserDB:
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access required",
+        )
 
     return user
 
@@ -87,5 +114,5 @@ async def get_email_from_token(token: str):
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Невірний токен для перевірки електронної пошти",
+            detail="Wrong token for checking email",
         )

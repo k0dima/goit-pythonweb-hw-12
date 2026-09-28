@@ -1,9 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean, func, Table
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship, mapped_column, Mapped, DeclarativeBase
-from sqlalchemy.sql.schema import ForeignKey, PrimaryKeyConstraint, UniqueConstraint
+from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.sql.sqltypes import Date
+
+from src.roles import UserRole
 
 
 class Base(DeclarativeBase):
@@ -32,5 +34,6 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     hashed_password: Mapped[str] = mapped_column(String(100), nullable=False)
+    role: Mapped[str] = mapped_column(String(100), nullable=False, default=UserRole.USER.value)
     avatar: Mapped[str] = mapped_column(String(255), nullable=True)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
