@@ -1,5 +1,5 @@
 from datetime import date
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from src.roles import UserRole
 
 class CreateContact(BaseModel):
@@ -39,3 +39,7 @@ class Token(BaseModel):
 
 class RequestEmail(BaseModel):
     email: EmailStr
+
+class ConfirmPassword(BaseModel):
+    token: str
+    password: str = Field(min_length=8)

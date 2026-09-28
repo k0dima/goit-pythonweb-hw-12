@@ -44,6 +44,9 @@ class FakeRedis:
     async def delete(self, key):
         return self.values.pop(key, None)
 
+    async def getdel(self, key):
+        return self.values.pop(key, None)
+
 
 @pytest.fixture(autouse=True)
 def fake_redis():
