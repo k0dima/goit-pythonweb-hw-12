@@ -16,21 +16,41 @@ from src.database.db import get_db
 from src.conf.config import settings
 from src.services.users import UserService
 from src.roles import UserRole
-from src.database.models import User as UserDB
 from src.schema import User as UserData
 
 
 class Hash:
+    """Hash and verify user passwords with the configured bcrypt context."""
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def verify_password(self, plain_password, hashed_password):
+        """Check a plain-text password against a stored hash.
+
+        Args:
+            plain_password (str): Password supplied by the user.
+            hashed_password (str): Hash stored for the account.
+
+        Returns:
+            bool: Whether the password matches the hash.
+        """
         return self.pwd_context.verify(plain_password, hashed_password)
 
     def get_password_hash(self, password: str):
+        """Hash a password for storage.
+
+        Args:
+            password (str): Plain-text password.
+
+        Returns:
+            str: Password hash.
+        """
         return self.pwd_context.hash(password)
 
 
 class TypeToken(str, Enum):
+    """Purpose encoded in an email token."""
+
     VERIFIED = "verified"
     RESET_PASSWORD = "reset-password"
 
@@ -40,6 +60,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # define a function to generate a new access token
 async def create_access_token(data: dict, expires_delta: Optional[int] = None):
+    """Create a signed JWT for API authentication.
+
+    Args:
+        data (dict): Claims to include, including the user's email as ``sub``.
+        expires_delta (int | None): Token lifetime in seconds, if specified.
+
+    Returns:
+        str: Signed access token.
+    """
     to_encode = data.copy()
     issued_at = datetime.now(UTC)
     if expires_delta:
@@ -58,6 +87,19 @@ async def get_current_user(
         db: AsyncSession = Depends(get_db),
         cache: Redis = Depends(get_redis),
 ):
+    """Validate an access token and load the current user's public data.
+
+    Args:
+        token (str): Bearer token from the request.
+        db (AsyncSession): Database session used on a cache miss.
+        cache (Redis): Cache for user data and token revocation timestamps.
+
+    Returns:
+        UserData: Authenticated user's public data.
+
+    Raises:
+        HTTPException: If the token is invalid or revoked, or the user is absent (401).
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -98,8 +140,19 @@ async def get_current_user(
 
 
 async def get_admin_user(
-        user: UserDB = Depends(get_current_user),
-) -> UserDB:
+        user: UserData = Depends(get_current_user),
+) -> UserData:
+    """Require administrator access for the current user.
+
+    Args:
+        user (UserData): Authenticated user returned by ``get_current_user``.
+
+    Returns:
+        UserData: Authenticated administrator.
+
+    Raises:
+        HTTPException: If the user's role is not administrator (403).
+    """
     if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -110,6 +163,14 @@ async def get_admin_user(
 
 
 def create_email_token(data: dict):
+    """Create a signed token for email verification.
+
+    Args:
+        data (dict): Email in ``sub`` and verification purpose in ``type_token``.
+
+    Returns:
+        str: Signed token valid for seven days.
+    """
     to_encode = data.copy()
     expire = datetime.now(UTC) + timedelta(days=7)
     to_encode.update({"iat": datetime.now(UTC), "exp": expire})
@@ -122,6 +183,14 @@ PASSWORD_RESET_TTL_SECONDS = 15 * 60
 
 
 def create_password_reset_token(email: str) -> tuple[str, str]:
+    """Create a short-lived password reset token and its identifier.
+
+    Args:
+        email (str): Email address of the account to reset.
+
+    Returns:
+        tuple[str, str]: Signed token and random identifier for Redis storage.
+    """
     token_id = token_urlsafe(32)
     now = datetime.now(UTC)
     token = jwt.encode(
@@ -139,6 +208,17 @@ def create_password_reset_token(email: str) -> tuple[str, str]:
 
 
 async def get_data_from_token(token: str):
+    """Decode an email token and require its core claims.
+
+    Args:
+        token (str): Signed email verification or password reset token.
+
+    Returns:
+        dict: Decoded token claims.
+
+    Raises:
+        HTTPException: If the token is invalid, expired, or missing claims (422).
+    """
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]

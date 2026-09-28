@@ -23,6 +23,15 @@ conf = ConnectionConfig(
 
 
 async def send_email(email: NameEmail, host: str):
+    """Send a verification email with a signed confirmation link.
+
+    Args:
+        email (NameEmail): Recipient's email address.
+        host (str): Public base URL of the API.
+
+    Notes:
+        Connection errors are printed and not raised by this function.
+    """
     try:
         token_verification = create_email_token(
             {
@@ -47,6 +56,13 @@ async def send_email(email: NameEmail, host: str):
 
 
 async def send_reset_password_email(email: NameEmail, host: str, token: str):
+    """Send password reset instructions using the reset email template.
+
+    Args:
+        email (NameEmail): Recipient's email address.
+        host (str): Public base URL used for the API documentation link.
+        token (str): Signed one-time reset token.
+    """
     message = MessageSchema(
         subject="Reset your password",
         recipients=[email],

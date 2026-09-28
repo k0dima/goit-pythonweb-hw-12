@@ -44,7 +44,7 @@ def test_not_confirmed_login(client):
     )
     assert response.status_code == 401, response.text
     data = response.json()
-    assert data["detail"] == "Електронна адреса не підтверджена"
+    assert data["detail"] == "Email is not confirmed"
 
 
 @pytest.mark.asyncio
@@ -78,7 +78,7 @@ def test_wrong_password_login(client):
     )
     assert response.status_code == 401, response.text
     data = response.json()
-    assert data["detail"] == "Неправильний логін або пароль"
+    assert data["detail"] == "Wrong login or password"
 
 
 def test_wrong_username_login(client):
@@ -88,7 +88,7 @@ def test_wrong_username_login(client):
     )
     assert response.status_code == 401, response.text
     data = response.json()
-    assert data["detail"] == "Неправильний логін або пароль"
+    assert data["detail"] == "Wrong login or password"
 
 
 def test_validation_error_login(client):
